@@ -85,6 +85,7 @@ rules:
   - clusters
   - configurations
   - serverlessclusters
+  - topics
   verbs:
   - create
   - delete
@@ -99,6 +100,7 @@ rules:
   - clusters/status
   - configurations/status
   - serverlessclusters/status
+  - topics/status
   verbs:
   - get
   - patch

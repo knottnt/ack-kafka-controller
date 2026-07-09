@@ -19,6 +19,7 @@ rules:
   - clusters
   - configurations
   - serverlessclusters
+  - topics
   verbs:
   - get
   - list

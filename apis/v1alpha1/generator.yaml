@@ -4,7 +4,6 @@ ignore:
     # - ClusterV2
     - VpcConnection
     - Replicator
-    - Topic
     #- Configuration
   field_paths:
    - ConnectivityInfo.VpcConnectivity
@@ -25,6 +24,81 @@ resources:
     hooks:
       sdk_read_one_post_set_output:
         template_path: hooks/configuration/sdk_read_one_post_set_output.go.tpl
+  Topic:
+    tags:
+      ignore: true
+    renames:
+      operations:
+        CreateTopic:
+          input_fields:
+            TopicName: Name
+          output_fields:
+            TopicName: Name
+        DescribeTopic:
+          input_fields:
+            TopicName: Name
+          output_fields:
+            TopicName: Name
+        UpdateTopic:
+          input_fields:
+            TopicName: Name
+          output_fields:
+            TopicName: Name
+        DeleteTopic:
+          input_fields:
+            TopicName: Name
+          output_fields:
+            TopicName: Name
+    synced:
+      when:
+        - path: Status.Status
+          in:
+            - ACTIVE
+    exceptions:
+      terminal_codes:
+        - BadRequestException
+    update_operation:
+      # UpdateTopic rejects an optional field re-sent at its current value
+      # (e.g. an unchanged PartitionCount -> "Topic already has N partitions").
+      # Only send optional Spec fields (Configs, PartitionCount) that actually
+      # changed; the required ClusterArn/TopicName are always sent.
+      omit_unchanged_fields: true
+    # UpdateTopic is async (ACTIVE -> UPDATING -> ACTIVE) and MSK rejects an
+    # update issued while the topic is not ACTIVE. Requeue until it is ACTIVE so
+    # an in-flight update can finish before the next one is attempted.
+    updateable:
+      when:
+        - path: Status.Status
+          in:
+            - ACTIVE
+    hooks:
+      delta_post_compare:
+        code: customPostCompare(delta, a, b)
+    fields:
+      Name:
+        is_primary_key: true
+        is_immutable: true
+      ClusterArn:
+        is_immutable: true
+        references:
+          resource: Cluster
+          path: Status.ACKResourceMetadata.ARN
+      ReplicationFactor:
+        is_immutable: true
+      # DescribeTopic returns the FULL effective topic configuration (all
+      # defaults merged in), while the user only supplies the subset of keys
+      # they want to override. A naive string compare therefore always differs,
+      # producing a perpetual phantom delta that fires a spurious UpdateTopic
+      # (which also re-sends the unchanged PartitionCount and is rejected by MSK
+      # as a terminal BadRequestException). Disable the generated string compare
+      # here; the customPostCompare delta_post_compare hook instead performs a
+      # semantic, key-by-key comparison so genuine Configs changes are still
+      # detected and reconciled.
+      Configs:
+        compare:
+          is_ignored: true
+      TopicArn:
+        is_arn: true
   Cluster:
     renames:
       operations:

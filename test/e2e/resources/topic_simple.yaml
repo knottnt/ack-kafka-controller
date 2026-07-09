@@ -1,0 +1,9 @@
+apiVersion: kafka.services.k8s.aws/v1alpha1
+kind: Topic
+metadata:
+  name: $TOPIC_NAME
+spec:
+  name: $TOPIC_NAME
+  clusterARN: $CLUSTER_ARN
+  partitionCount: 1
+  replicationFactor: 2
