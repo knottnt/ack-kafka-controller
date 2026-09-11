@@ -3,7 +3,7 @@ ignore:
     #- Cluster
     # - ClusterV2
     - Replicator
-    - Topic
+    #- Topic
     #- Configuration
   field_paths:
    - DescribeClusterOutput.ClusterInfo.BrokerNodeGroupInfo.ZoneIds
@@ -23,6 +23,58 @@ resources:
     hooks:
       sdk_read_one_post_set_output:
         template_path: hooks/configuration/sdk_read_one_post_set_output.go.tpl
+  Topic:
+    # Topic is identified by the composite (ClusterArn, TopicName). TopicName is
+    # renamed to Name across every operation that carries it; TopicNameFilter
+    # (ListTopics-only) is intentionally NOT renamed. TopicArn is the resource's
+    # own ARN -> ACKResourceMetadata.ARN via is_arn.
+    renames:
+      operations:
+        CreateTopic:
+          input_fields:
+            TopicName: Name
+        DescribeTopic:
+          input_fields:
+            TopicName: Name
+          output_fields:
+            TopicName: Name
+            TopicArn: TopicARN
+        UpdateTopic:
+          input_fields:
+            TopicName: Name
+        DeleteTopic:
+          input_fields:
+            TopicName: Name
+    tags:
+      ignore: true
+    # Topic's async lifecycle output field is Status (TopicState), so the synced
+    # gate is Status.Status (NOT Status.State as on Cluster).
+    synced:
+      when:
+        - path: Status.Status
+          in:
+            - ACTIVE
+    exceptions:
+      errors:
+        404:
+          code: NotFoundException
+      terminal_codes:
+        # TopicExistsException: create against an existing topic. BadRequestException:
+        # invalid input, including a PartitionCount decrease (increase-only).
+        - TopicExistsException
+        - BadRequestException
+    fields:
+      Name:
+        is_immutable: true
+      ClusterARN:
+        is_immutable: true
+        references:
+          resource: Cluster
+          path: Status.ACKResourceMetadata.ARN
+      ReplicationFactor:
+        is_immutable: true
+      TopicARN:
+        is_arn: true
   Cluster:
     renames:
       operations:

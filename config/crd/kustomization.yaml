@@ -5,4 +5,5 @@ resources:
   - bases/kafka.services.k8s.aws_clusters.yaml
   - bases/kafka.services.k8s.aws_configurations.yaml
   - bases/kafka.services.k8s.aws_serverlessclusters.yaml
+  - bases/kafka.services.k8s.aws_topics.yaml
   - bases/kafka.services.k8s.aws_vpcconnections.yaml

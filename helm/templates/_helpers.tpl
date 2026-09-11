@@ -87,6 +87,7 @@ rules:
   - clusters
   - configurations
   - serverlessclusters
+  - topics
   - vpcconnections
   verbs:
   - create
@@ -102,6 +103,7 @@ rules:
   - clusters/status
   - configurations/status
   - serverlessclusters/status
+  - topics/status
   - vpcconnections/status
   verbs:
   - get
